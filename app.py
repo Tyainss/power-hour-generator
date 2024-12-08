@@ -2,12 +2,27 @@ import streamlit as st
 import yt_dlp
 import io
 import os
+import re
 from pydub import AudioSegment
 import tempfile
 import subprocess
-
+import random
 
 SOUND_CLIPS_PATH = 'sound_clips/'
+
+def validate_playlist_name(name: str) -> tuple:
+    """Validates the playlist name for invalid characters."""
+    invalid_chars = r'[<>:"/\\|?*]'
+    valid = True
+    message = ''
+    if re.search(invalid_chars, name):
+        valid = False 
+        message = """
+        The playlist name contains invalid characters: < > : " / \\ | ? *\n
+        Please remove any invalid character.
+        """
+    
+    return valid, message
 
 def download_and_convert_audio(url: str):
     """Downloads raw audio from YouTube and converts it to MP3 using ffmpeg."""
@@ -130,7 +145,12 @@ def main():
 
     # Get playlist name from user
     playlist_name = st.text_input("Enter Playlist Name:")
-    if not playlist_name:
+    if playlist_name:
+        is_valid, warning_msg = validate_playlist_name(playlist_name)
+        if not is_valid:
+            st.error(warning_msg)
+            return
+    else:
         st.warning("Please enter a playlist name.")
         return
     
@@ -185,6 +205,12 @@ def main():
         st.warning("Please enter all the song links.")
         return
     
+    # Option to shuffle songs
+    random_order = st.checkbox("Random Order", value=False)
+    if random_order:
+        music_links = random.sample(music_links, len(music_links))
+
+
     # Only enable download button when all links and start times are entered
     if st.button("Create Playlist"):
         final_song = create_playlist(music_links, start_seconds)
