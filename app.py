@@ -92,23 +92,41 @@ def create_playlist(music_links, start_seconds):
     
     return final_song
 
+def fetch_song_title(url: str) -> str:
+    """Fetches the song title from a YouTube URL."""
+    try:
+        ydl_opts = {
+            'quiet': True,
+            'skip_download': True,  # Do not download the video
+        }
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            info = ydl.extract_info(url, download=False)
+            return info.get('title', 'Unknown Title')
+    except Exception as e:
+        return f"Error fetching title: {str(e)}"
 
 def main():
+    st.set_page_config(page_title='Power Hour', page_icon=':beer:') # layout='wide', 
     st.title("Power Hour Playlist Maker")
     
     # Introductory section
-    st.markdown("""
-    ### About the App
-    This app allows you to create a personalized Power Hour playlist by downloading and combining audio clips from YouTube.
-    Follow these steps to create your playlist:
-    1. Enter a name for your playlist.
-    2. Specify the number of songs you want in the playlist.
-    3. Provide YouTube links for each song and optionally set a custom start time for each clip.
-    4. Click "Create Playlist file" to generate the MP3 file.
-    5. Download your playlist and enjoy your personalized Power Hour!
+    with st.expander('About this App', expanded=True, icon=':material/info:'):
+        st.markdown("""
+        ### Power Hour
+        This app allows you to create a personalized Power Hour playlist by downloading and combining audio clips from YouTube.
+        Follow these steps to create your playlist:
+        1. Enter a name for your playlist.
+        2. Specify the number of songs you want in the playlist.
+        3. Provide YouTube links for each song and optionally set a custom start time for each clip.
+        4. Click "Create Playlist file" to generate the MP3 file.
+        5. Download your playlist and enjoy your personalized Power Hour!
 
-    **Note:** Each song will be trimmed to 1 minute starting from the provided start time.
-    """)
+        **Note:** Each song will be trimmed to 1 minute starting from the provided start time.
+        """)
+
+    # Initialize session state for song titles if not already done
+    if "song_titles" not in st.session_state:
+        st.session_state["song_titles"] = {}
 
     # Get playlist name from user
     playlist_name = st.text_input("Enter Playlist Name:")
@@ -119,26 +137,53 @@ def main():
     # Initialize music_links and start_seconds dictionaries
     music_links = []
     start_seconds = {}
+    # song_titles = []
 
     num_songs = st.number_input("Enter number of songs:", min_value=1, max_value=90, value=60)
     
     for i in range(num_songs):
         col1, col2 = st.columns([4, 1])
         with col1:
-            link = st.text_input(f"Enter YouTube link for song {i + 1}:")
+            # url = st.text_input(
+            #     f"Enter YouTube link for song {i + 1}:" if i >= len(song_titles) else f"Song Title: {song_titles[i]}",
+            #     key=f'url_{i}'
+            # )
+            url = st.text_input(
+                f"Enter YouTube link for song {i + 1}",
+                key=f"url_{i}"
+            )
+            if url:
+                # Fetch title if URL is new or changed
+                if url not in st.session_state["song_titles"]:
+                    with st.spinner("Fetching song title..."):
+                        title = fetch_song_title(url)
+                        st.session_state["song_titles"][url] = title
+                else:
+                    title = st.session_state["song_titles"][url]
+
+                # Display the title
+                st.write(f"✅ {title}")
+
+                # # Fetch title if a URL is provided
+                # if len(song_titles) <= i:
+                #     title = fetch_song_title(url)
+                #     song_titles.append(title)
+                # else:
+                #     title = song_titles[i]
+
+                # # Update the placeholder dynamically
+                # st.write(f"Song Title: {title}")
+            
         with col2:
             seconds = st.number_input(f"Start time for song {i + 1}", min_value=0, value=0, key=f"start_{i}")
         
-        if link:
-            music_links.append(link)
-            start_seconds[link] = seconds
+        if url:
+            music_links.append(url)
+            start_seconds[url] = seconds
     
     if len(music_links) < num_songs:
         st.warning("Please enter all the song links.")
         return
-    
-    # Create playlist with or without progress bar
-    # show_progress = st.checkbox("Show download progress")
     
     # Only enable download button when all links and start times are entered
     if st.button("Create Playlist"):
