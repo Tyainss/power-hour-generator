@@ -4,74 +4,49 @@ import io
 import os
 from pydub import AudioSegment
 import tempfile
+import subprocess
+
 
 SOUND_CLIPS_PATH = 'sound_clips/'
 
-def download_audio(url: str, show_progress: bool = False, _progress_bar=None):
-    """Download audio from YouTube and use a temporary file for pydub."""
-    fd, temp_path = tempfile.mkstemp()  # Temporary base path without extension
-    os.close(fd)
-
-    ydl_opts = {
-        'format': 'bestaudio',
-        'outtmpl': temp_path,  # Use base path
-        'quiet': True,
-        'verbose': True,
-        'postprocessors': [{
-            'key': 'FFmpegExtractAudio',
-            'preferredcodec': 'mp3',
-            'preferredquality': '192'
-        }],
-        # 'ffmpeg_location': 'D:\\ytdl\\ffmpeg.exe',  # Path to ffmpeg
-    }
-
-
-    if show_progress and _progress_bar:
-        ydl_opts['progress_hooks'] = [lambda d: _progress_bar.progress(d.get('percent', 0))]
-
-    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-        info = ydl.extract_info(url, download=True)
-
-    temp_path_mp3 = f"{temp_path}.mp3"
-    if not os.path.exists(temp_path_mp3):
-        temp_path_mp3 = f"{temp_path_mp3}.mp3"
-
-    if not os.path.exists(temp_path_mp3):
-        raise FileNotFoundError(f"Downloaded file not found: {temp_path_mp3}")
-    if os.path.getsize(temp_path_mp3) == 0:
-        raise ValueError("Downloaded file is empty.")
-
-    # Return the path instead of loading into memory
-    return temp_path_mp3
-
 def download_and_convert_audio(url: str):
     """Downloads raw audio from YouTube and converts it to MP3 using ffmpeg."""
-    # Step 1: Download raw audio file
+    # Download raw audio file
     ydl_opts = {
         'format': 'bestaudio',  # Download the best audio quality available
-        'outtmpl': 'raw_audio.%(ext)s',  # Save as 'raw_audio' with correct extension
-        'quiet': False,  # Enable logging for debugging
+        'outtmpl': 'tmp_raw_audio.%(ext)s',  # Save as 'tmp_raw_audio' with correct extension
+        'quiet': True,
     }
 
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         info = ydl.extract_info(url, download=True)
 
     raw_file = info['requested_downloads'][0]['filepath']  # Path to the downloaded raw file
-    print(f"Raw file downloaded: {raw_file}")
 
-    # Step 2: Convert to MP3 using ffmpeg
-    converted_file = "output.mp3"  # Output MP3 file
-    command = f'ffmpeg -i "{raw_file}" -vn -acodec mp3 "{converted_file}"'
-    os.system(command)
+    # Convert to MP3 using ffmpeg
+    converted_file = "tmp_output_audio_file.mp3"  # Output MP3 file
+    # command = f'ffmpeg -i "{raw_file}" -vn -acodec mp3 "{converted_file}"'
+    # os.system(command)
+    command = [
+        'ffmpeg',
+        '-i', raw_file,
+        '-vn',
+        '-acodec', 'mp3',
+        converted_file,
+    ]
 
-    # Step 3: Clean up the raw file (optional)
+    # Suppress output
+    with open(os.devnull, 'w') as devnull:
+        subprocess.run(command, stdout=devnull, stderr=devnull)
+
+    # Clean up the raw file
     if os.path.exists(raw_file):
         os.remove(raw_file)
 
-    print(f"Converted file saved as: {converted_file}")
+    # print(f"Converted file saved as: {converted_file}")
     return converted_file
 
-def create_playlist(music_links, start_seconds, show_progress=False):
+def create_playlist(music_links, start_seconds):
     """
     Creates a playlist by processing music from YouTube links.
     """
@@ -83,14 +58,12 @@ def create_playlist(music_links, start_seconds, show_progress=False):
     personal_tag = AudioSegment.from_file(SOUND_CLIPS_PATH + 'signature_tag.m4a')
 
     total_songs = len(music_links)
-
-    if show_progress:
-        progress_bar = st.progress(0)
+    
+    progress_bar = st.progress(0)
 
     with st.spinner("Downloading songs..."):
         for i, url in enumerate(music_links):
             # Download each song and get file path
-            # audio_file_path = download_audio(url, show_progress, progress_bar)
             audio_file_path = download_and_convert_audio(url)
             
             # Load the song directly from the file path
@@ -102,7 +75,7 @@ def create_playlist(music_links, start_seconds, show_progress=False):
             # Trim the song to the specified start time and first minute
             sound = sound[start_time:start_time + 60000]  # First 1 minute in milliseconds
             
-            # Add personal tag for the first song
+            # Add personal tag for the first song and sound bites in between songs
             if i == 0:
                 final_song += personal_tag
                 final_song += sound
@@ -115,16 +88,28 @@ def create_playlist(music_links, start_seconds, show_progress=False):
             os.remove(audio_file_path)
 
             # Update progress bar
-            if show_progress:
-                progress_bar.progress((i + 1) / total_songs)
+            progress_bar.progress((i + 1) / total_songs)
     
     return final_song
-
 
 
 def main():
     st.title("Power Hour Playlist Maker")
     
+    # Introductory section
+    st.markdown("""
+    ### About the App
+    This app allows you to create a personalized Power Hour playlist by downloading and combining audio clips from YouTube.
+    Follow these steps to create your playlist:
+    1. Enter a name for your playlist.
+    2. Specify the number of songs you want in the playlist.
+    3. Provide YouTube links for each song and optionally set a custom start time for each clip.
+    4. Click "Create Playlist file" to generate the MP3 file.
+    5. Download your playlist and enjoy your personalized Power Hour!
+
+    **Note:** Each song will be trimmed to 1 minute starting from the provided start time.
+    """)
+
     # Get playlist name from user
     playlist_name = st.text_input("Enter Playlist Name:")
     if not playlist_name:
@@ -135,7 +120,7 @@ def main():
     music_links = []
     start_seconds = {}
 
-    num_songs = st.number_input("Enter number of songs:", min_value=1, max_value=60, value=60)
+    num_songs = st.number_input("Enter number of songs:", min_value=1, max_value=90, value=60)
     
     for i in range(num_songs):
         col1, col2 = st.columns([4, 1])
@@ -149,21 +134,23 @@ def main():
             start_seconds[link] = seconds
     
     if len(music_links) < num_songs:
-        st.warning("Please enter all the song links and start times.")
+        st.warning("Please enter all the song links.")
         return
     
     # Create playlist with or without progress bar
-    show_progress = st.checkbox("Show download progress")
+    # show_progress = st.checkbox("Show download progress")
     
     # Only enable download button when all links and start times are entered
-    if st.button("Download Playlist"):
-        final_song = create_playlist(music_links, start_seconds, show_progress)
+    if st.button("Create Playlist"):
+        final_song = create_playlist(music_links, start_seconds)
         
         # Convert final playlist to byte data for download
         with tempfile.NamedTemporaryFile(delete=False, suffix='.mp3') as temp_file:
             final_song.export(temp_file.name, format="mp3")
             temp_file_path = temp_file.name
         
+        st.balloons()
+
         # Allow the user to download the generated playlist
         with open(temp_file_path, 'rb') as file:
             st.download_button(
