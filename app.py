@@ -120,14 +120,23 @@ def fetch_song_title(url: str) -> str:
     except Exception as e:
         return f"Error fetching title: {str(e)}"
 
+
 def main():
-    st.set_page_config(page_title='Power Hour', page_icon=':beer:') # layout='wide', 
-    st.title("Power Hour Playlist Maker")
+    st.title(":beer: Power Hour Playlist Maker")
+
+    # Config Sidebar
+    st.sidebar.title("Playlist Options")
+    order_option = st.sidebar.radio(
+        "Select the playlist order:",
+        options=["In Order", "Random Order"],
+        index=0,  # Default to "In Order"
+        help="Choose whether the playlist follows the entered song order or shuffles the songs randomly."
+    )
     
     # Introductory section
     with st.expander('About this App', expanded=True, icon=':material/info:'):
         st.markdown("""
-        ### Power Hour
+        ### :beer: Power Hour
         This app allows you to create a personalized Power Hour playlist by downloading and combining audio clips from YouTube.
         Follow these steps to create your playlist:
         1. Enter a name for your playlist.
@@ -138,10 +147,6 @@ def main():
 
         **Note:** Each song will be trimmed to 1 minute starting from the provided start time.
         """)
-
-    # Initialize session state for song titles if not already done
-    if "song_titles" not in st.session_state:
-        st.session_state["song_titles"] = {}
 
     # Get playlist name from user
     playlist_name = st.text_input("Enter Playlist Name:")
@@ -154,62 +159,66 @@ def main():
         st.warning("Please enter a playlist name.")
         return
     
-    # Initialize music_links and start_seconds dictionaries
-    music_links = []
-    start_seconds = {}
-    # song_titles = []
+    # Initialize session state for song titles if not already done
+    if "song_titles" not in st.session_state:
+        st.session_state["song_titles"] = {}
 
     num_songs = st.number_input("Enter number of songs:", min_value=1, max_value=90, value=60)
-    
-    for i in range(num_songs):
-        col1, col2 = st.columns([4, 1])
-        with col1:
-            # url = st.text_input(
-            #     f"Enter YouTube link for song {i + 1}:" if i >= len(song_titles) else f"Song Title: {song_titles[i]}",
-            #     key=f'url_{i}'
-            # )
-            url = st.text_input(
-                f"Enter YouTube link for song {i + 1}",
-                key=f"url_{i}"
-            )
-            if url:
-                # Fetch title if URL is new or changed
-                if url not in st.session_state["song_titles"]:
-                    with st.spinner("Fetching song title..."):
-                        title = fetch_song_title(url)
-                        st.session_state["song_titles"][url] = title
-                else:
-                    title = st.session_state["song_titles"][url]
 
-                # Display the title
-                st.write(f"✅ {title}")
+    with st.container(height=500):
 
-                # # Fetch title if a URL is provided
-                # if len(song_titles) <= i:
-                #     title = fetch_song_title(url)
-                #     song_titles.append(title)
-                # else:
-                #     title = song_titles[i]
-
-                # # Update the placeholder dynamically
-                # st.write(f"Song Title: {title}")
-            
-        with col2:
-            seconds = st.number_input(f"Start time for song {i + 1}", min_value=0, value=0, key=f"start_{i}")
+        # Initialize music_links and start_seconds dictionaries
+        music_links = []
+        start_seconds = {}
+        # song_titles = []
         
-        if url:
-            music_links.append(url)
-            start_seconds[url] = seconds
-    
+        for i in range(num_songs):
+            col1, col2 = st.columns([4, 1])
+            with col1:
+                # url = st.text_input(
+                #     f"Enter YouTube link for song {i + 1}:" if i >= len(song_titles) else f"Song Title: {song_titles[i]}",
+                #     key=f'url_{i}'
+                # )
+                url = st.text_input(
+                    f"Enter YouTube link for song {i + 1}",
+                    key=f"url_{i}"
+                )
+                if url:
+                    # Fetch title if URL is new or changed
+                    if url not in st.session_state["song_titles"]:
+                        with st.spinner("Fetching song title..."):
+                            title = fetch_song_title(url)
+                            st.session_state["song_titles"][url] = title
+                    else:
+                        title = st.session_state["song_titles"][url]
+
+                    # Display the title
+                    st.write(f"✅ {title}")
+
+                    # # Fetch title if a URL is provided
+                    # if len(song_titles) <= i:
+                    #     title = fetch_song_title(url)
+                    #     song_titles.append(title)
+                    # else:
+                    #     title = song_titles[i]
+
+                    # # Update the placeholder dynamically
+                    # st.write(f"Song Title: {title}")
+                
+            with col2:
+                seconds = st.number_input(f"Start time for song {i + 1}", min_value=0, value=0, key=f"start_{i}")
+            
+            if url:
+                music_links.append(url)
+                start_seconds[url] = seconds
+        
     if len(music_links) < num_songs:
         st.warning("Please enter all the song links.")
         return
     
-    # Option to shuffle songs
-    random_order = st.checkbox("Random Order", value=False)
-    if random_order:
+    # Adjust song order based on sidebar selection
+    if order_option == "Random Order":
         music_links = random.sample(music_links, len(music_links))
-
 
     # Only enable download button when all links and start times are entered
     if st.button("Create Playlist"):
@@ -232,4 +241,10 @@ def main():
             )
 
 if __name__ == "__main__":
+    st.set_page_config(layout='wide', page_title='Power Hour', page_icon=':beer:')
     main()
+
+
+# TODO
+# 2. Add a default time option of best minute of song - Not working
+# 3. Play snippet of audio - Try
