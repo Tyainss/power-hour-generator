@@ -9,6 +9,8 @@ import subprocess
 import random
 import uuid
 
+from utils.config_manager import ConfigManager
+
 SOUND_CLIPS_PATH = 'sound_clips/'
 
 def validate_playlist_name(name: str) -> tuple:
@@ -165,12 +167,14 @@ def main():
         index=0,  # Default to "In Order"
         help='Choose whether the playlist follows the entered song order or shuffles the songs randomly.'
     )
+    st.sidebar.divider()
         # Widget for uploading custom tchica_tchica
-    uploaded_tchica_file = st.sidebar.file_uploader(
-        "Upload a custom sound to replace 'tchica_tchica.m4a':",
-        type=['mp3', 'wav', 'm4a'],
-        help='Upload an audio file to replace the default "tchica tchica" sound.'
-    )
+    with st.sidebar.expander(label="Upload a custom sound to replace 'tchica_tchica.m4a':",):
+        uploaded_tchica_file = st.file_uploader(
+            "Upload a custom sound to replace 'tchica_tchica.m4a':",
+            type=['mp3', 'wav', 'm4a'],
+            label_visibility='hidden',
+        )
 
     # Define sounds
 
@@ -268,6 +272,7 @@ def main():
             )
 
 if __name__ == "__main__":
+    cm = ConfigManager('config.json')
     st.set_page_config(layout='wide', page_title='Power Hour', page_icon=':beer:')
     main()
 
