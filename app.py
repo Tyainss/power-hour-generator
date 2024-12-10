@@ -7,6 +7,7 @@ from pydub import AudioSegment
 import tempfile
 import subprocess
 import random
+import uuid
 
 SOUND_CLIPS_PATH = 'sound_clips/'
 
@@ -39,9 +40,10 @@ def download_and_convert_audio(url: str):
     raw_file = info['requested_downloads'][0]['filepath']  # Path to the downloaded raw file
 
     # Convert to MP3 using ffmpeg
-    converted_file = "tmp_output_audio_file.mp3"  # Output MP3 file
-    # command = f'ffmpeg -i "{raw_file}" -vn -acodec mp3 "{converted_file}"'
-    # os.system(command)
+    # converted_file = "tmp_output_audio_file.mp3"  # Output MP3 file
+    unique_id = str(uuid.uuid4())
+    converted_file = f"tmp_{unique_id}.mp3"
+    
     command = [
         'ffmpeg',
         '-i', raw_file,
@@ -67,7 +69,7 @@ def create_playlist(music_links, start_seconds):
     """
     final_song = AudioSegment.empty()
 
-    # Load horn and personal tag
+    # Load horn and personal tag and trimm them
     horn = AudioSegment.from_file(SOUND_CLIPS_PATH + 'horn.m4a', format="m4a")[:-1300]
     tchica = AudioSegment.from_file(SOUND_CLIPS_PATH + 'tchica_tchica.m4a', format="m4a")[:-300]
     personal_tag = AudioSegment.from_file(SOUND_CLIPS_PATH + 'signature_tag.m4a')
@@ -107,6 +109,7 @@ def create_playlist(music_links, start_seconds):
     
     return final_song
 
+@st.cache_data
 def fetch_song_title(url: str) -> str:
     """Fetches the song title from a YouTube URL."""
     try:
@@ -121,18 +124,56 @@ def fetch_song_title(url: str) -> str:
     except Exception as e:
         return f"❌ Could not fetch song"
 
+def _load_sound_clips(uploaded_tchica=False):
+    """Load the sound clips necessary for the playlist"""
+    ## Intro sound
+    personal_tag = AudioSegment.from_file(SOUND_CLIPS_PATH + 'signature_tag.m4a')
+
+    ## In-between sounds
+    # Process the uploaded file or use the default tchica_tchica sound
+    if uploaded_tchica_file:
+        # Save the uploaded file to a temporary location
+        with open("temp_tchica.m4a", "wb") as temp_file:
+            temp_file.write(uploaded_tchica_file.read())
+        
+        # Load the uploaded file as an AudioSegment
+        tchica = AudioSegment.from_file("temp_tchica.m4a")
+        st.sidebar.success("Custom sound loaded successfully!")
+    else:
+        # Use the default 'tchica_tchica.m4a' if no file is uploaded
+        tchica = AudioSegment.from_file(SOUND_CLIPS_PATH + 'tchica_tchica.m4a', format="m4a")[:-300]
+    
+    # Load horn and trimm it
+    horn = AudioSegment.from_file(SOUND_CLIPS_PATH + 'horn.m4a', format="m4a")[:-1300]
+
+    sound_clips = {
+        'personal_tag': personal_tag,
+        'tchica': tchica,
+        'horn': horn,
+    }
+    return sound_clips
 
 def main():
-    st.title(":beer: Power Hour Playlist Maker")
+    st.title(':beer: Power Hour Playlist Maker')
 
     # Config Sidebar
-    st.sidebar.title("Playlist Options")
+    st.sidebar.title('Playlist Options')
+        # Button to select playlist order
     order_option = st.sidebar.radio(
-        "Select the playlist order:",
-        options=["In Order", "Random Order"],
+        'Select the playlist order:',
+        options=['In Order', 'Random Order'],
         index=0,  # Default to "In Order"
-        help="Choose whether the playlist follows the entered song order or shuffles the songs randomly."
+        help='Choose whether the playlist follows the entered song order or shuffles the songs randomly.'
     )
+        # Widget for uploading custom tchica_tchica
+    uploaded_tchica_file = st.sidebar.file_uploader(
+        "Upload a custom sound to replace 'tchica_tchica.m4a':",
+        type=['mp3', 'wav', 'm4a'],
+        help='Upload an audio file to replace the default "tchica tchica" sound.'
+    )
+
+    # Define sounds
+
     
     # Introductory section
     with st.expander('About this App', expanded=True, icon=':material/info:'):
@@ -171,7 +212,6 @@ def main():
         # Initialize music_links and start_seconds dictionaries
         music_links = []
         start_seconds = {}
-        # song_titles = []
         
         for i in range(num_songs):
             col1, col2 = st.columns([4, 1])
@@ -191,16 +231,6 @@ def main():
 
                     # Display the title
                     st.write(f"{title}")
-
-                    # # Fetch title if a URL is provided
-                    # if len(song_titles) <= i:
-                    #     title = fetch_song_title(url)
-                    #     song_titles.append(title)
-                    # else:
-                    #     title = song_titles[i]
-
-                    # # Update the placeholder dynamically
-                    # st.write(f"Song Title: {title}")
                 
             with col2:
                 seconds = st.number_input(f"Start time for song {i + 1}", min_value=0, value=0, key=f"start_{i}")
@@ -243,5 +273,6 @@ if __name__ == "__main__":
 
 
 # TODO
-# 2. Add a default time option of best minute of song - Not working
-# 3. Play snippet of audio - Try
+
+# Try dragging components: https://draggable-container-demo.streamlit.app/
+# X. Try asynchronous processing 1 more time
