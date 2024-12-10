@@ -116,9 +116,10 @@ def fetch_song_title(url: str) -> str:
         }
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(url, download=False)
-            return info.get('title', 'Unknown Title')
+            title = f"✅ {info.get('title', 'Unknown Title') }"
+            return title
     except Exception as e:
-        return f"Error fetching title: {str(e)}"
+        return f"❌ Could not fetch song"
 
 
 def main():
@@ -175,10 +176,6 @@ def main():
         for i in range(num_songs):
             col1, col2 = st.columns([4, 1])
             with col1:
-                # url = st.text_input(
-                #     f"Enter YouTube link for song {i + 1}:" if i >= len(song_titles) else f"Song Title: {song_titles[i]}",
-                #     key=f'url_{i}'
-                # )
                 url = st.text_input(
                     f"Enter YouTube link for song {i + 1}",
                     key=f"url_{i}"
@@ -193,7 +190,7 @@ def main():
                         title = st.session_state["song_titles"][url]
 
                     # Display the title
-                    st.write(f"✅ {title}")
+                    st.write(f"{title}")
 
                     # # Fetch title if a URL is provided
                     # if len(song_titles) <= i:
