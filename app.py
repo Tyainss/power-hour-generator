@@ -11,7 +11,6 @@ import uuid
 
 from utils.config_manager import ConfigManager
 
-SOUND_CLIPS_PATH = 'sound_clips/'
 
 def validate_playlist_name(name: str) -> tuple:
     """Validates the playlist name for invalid characters."""
@@ -72,9 +71,9 @@ def create_playlist(music_links, start_seconds):
     final_song = AudioSegment.empty()
 
     # Load horn and personal tag and trimm them
-    horn = AudioSegment.from_file(SOUND_CLIPS_PATH + 'horn.m4a', format="m4a")[:-1300]
-    tchica = AudioSegment.from_file(SOUND_CLIPS_PATH + 'tchica_tchica.m4a', format="m4a")[:-300]
-    personal_tag = AudioSegment.from_file(SOUND_CLIPS_PATH + 'signature_tag.m4a')
+    horn = AudioSegment.from_file(cm.SOUND_CLIPS_PATH + 'horn.m4a', format="m4a")[:-1300]
+    tchica = AudioSegment.from_file(cm.SOUND_CLIPS_PATH + 'tchica_tchica.m4a', format="m4a")[:-300]
+    personal_tag = AudioSegment.from_file(cm.SOUND_CLIPS_PATH + 'signature_tag.m4a')
 
     total_songs = len(music_links)
     
@@ -92,7 +91,7 @@ def create_playlist(music_links, start_seconds):
             start_time = start_seconds.get(url, 0) * 1000  # Convert seconds to milliseconds
             
             # Trim the song to the specified start time and first minute
-            sound = sound[start_time:start_time + 60000]  # First 1 minute in milliseconds
+            sound = sound[start_time:start_time + cm.DEFAULT_SONG_DURATION * 1000]  # First 1 minute in milliseconds
             
             # Add personal tag for the first song and sound bites in between songs
             if i == 0:
@@ -129,7 +128,7 @@ def fetch_song_title(url: str) -> str:
 def _load_sound_clips(uploaded_tchica=False):
     """Load the sound clips necessary for the playlist"""
     ## Intro sound
-    personal_tag = AudioSegment.from_file(SOUND_CLIPS_PATH + 'signature_tag.m4a')
+    personal_tag = AudioSegment.from_file(cm.SOUND_CLIPS_PATH + 'signature_tag.m4a')
 
     ## In-between sounds
     # Process the uploaded file or use the default tchica_tchica sound
@@ -143,10 +142,10 @@ def _load_sound_clips(uploaded_tchica=False):
         st.sidebar.success("Custom sound loaded successfully!")
     else:
         # Use the default 'tchica_tchica.m4a' if no file is uploaded
-        tchica = AudioSegment.from_file(SOUND_CLIPS_PATH + 'tchica_tchica.m4a', format="m4a")[:-300]
+        tchica = AudioSegment.from_file(cm.SOUND_CLIPS_PATH + 'tchica_tchica.m4a', format="m4a")[:-300]
     
     # Load horn and trimm it
-    horn = AudioSegment.from_file(SOUND_CLIPS_PATH + 'horn.m4a', format="m4a")[:-1300]
+    horn = AudioSegment.from_file(cm.SOUND_CLIPS_PATH + 'horn.m4a', format="m4a")[:-1300]
 
     sound_clips = {
         'personal_tag': personal_tag,
@@ -209,7 +208,7 @@ def main():
     if "song_titles" not in st.session_state:
         st.session_state["song_titles"] = {}
 
-    num_songs = st.number_input("Enter number of songs:", min_value=1, max_value=90, value=60)
+    num_songs = st.number_input("Enter number of songs:", min_value=1, max_value=cm.MAX_NUMBER_SONGS, value=cm.DEFAULT_NUMBER_SONGS)
 
     with st.container(height=500):
 
@@ -275,6 +274,7 @@ if __name__ == "__main__":
     cm = ConfigManager('config.json')
     st.set_page_config(layout='wide', page_title='Power Hour', page_icon=':beer:')
     main()
+
 
 
 # TODO
