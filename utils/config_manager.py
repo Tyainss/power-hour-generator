@@ -21,3 +21,6 @@ class ConfigManager:
         except json.JSONDecodeError:
             logger.error(f"Error: The file {path} is not a valid JSON.")
             return {}
+
+    def get(self, key, default=None):
+        return self.config.get(key, default)

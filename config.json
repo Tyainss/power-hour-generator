@@ -1,5 +1,5 @@
 {
-    "SOUND_CLIPS_PATH": "sound_clips/",
+    "SOUND_CLIPS_PATH": "assets/sound_clips/",
     "DEFAULT_SONG_DURATION": 60,
     "DEFAULT_NUMBER_SONGS": 60,
     "MAX_NUMBER_SONGS": 90
