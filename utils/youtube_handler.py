@@ -1,6 +1,7 @@
 import yt_dlp
 import uuid
 import os
+import streamlit as st
 
 def download_and_convert_audio(url: str):
     """Downloads raw audio from YouTube and converts it to MP3 using ffmpeg."""
@@ -40,6 +41,7 @@ def download_and_convert_audio(url: str):
     # print(f"Converted file saved as: {converted_file}")
     return converted_file
 
+@st.cache_data(show_spinner=False)
 def fetch_song_title(url: str) -> str:
     """Fetches the song title from a YouTube URL."""
     try:

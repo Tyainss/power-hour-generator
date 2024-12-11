@@ -2,33 +2,34 @@ from pydub import AudioSegment
 import os
 import streamlit as st
 
-def load_sound_clips(config_manager, session_state):
+@st.cache_resource(show_spinner=False)
+def load_sound_clips(_config_manager, _session_state):
     """
     Load the sound clips necessary for the playlist.
 
     Args:
-        config_manager (ConfigManager): Instance of ConfigManager for paths and configurations.
-        session_state (dict): Streamlit session state to check for uploaded files.
+        _config_manager (ConfigManager): Instance of ConfigManager for paths and configurations.
+        _session_state (dict): Streamlit session state to check for uploaded files.
 
     Returns:
         dict: A dictionary containing personal_tag, tchica, and horn AudioSegments.
     """
     # Intro sound
-    personal_tag = AudioSegment.from_file(config_manager.get("SOUND_CLIPS_PATH") + "signature_tag.m4a")
+    personal_tag = AudioSegment.from_file(_config_manager.get("SOUND_CLIPS_PATH") + "signature_tag.m4a")
 
     # In-between sounds
-    if session_state.get("uploaded_tchica"):
-        uploaded_tchica_file = session_state["uploaded_tchica"]
+    if _session_state.get("uploaded_tchica"):
+        uploaded_tchica_file = _session_state["uploaded_tchica"]
         with open("temp_tchica.m4a", "wb") as temp_file:
             temp_file.write(uploaded_tchica_file.read())
         tchica = AudioSegment.from_file("temp_tchica.m4a")
     else:
         tchica = AudioSegment.from_file(
-            config_manager.get("SOUND_CLIPS_PATH") + "tchica_tchica.m4a"
+            _config_manager.get("SOUND_CLIPS_PATH") + "tchica_tchica.m4a"
         )[:-300]
 
     # Load horn and trim it
-    horn = AudioSegment.from_file(config_manager.get("SOUND_CLIPS_PATH") + "horn.m4a")[:-1300]
+    horn = AudioSegment.from_file(_config_manager.get("SOUND_CLIPS_PATH") + "horn.m4a")[:-1300]
 
     return {
         "personal_tag": personal_tag,
