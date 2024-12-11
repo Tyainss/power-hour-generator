@@ -9,153 +9,27 @@ import subprocess
 import random
 import uuid
 
+from utils.validations import validate_playlist_name
+from utils.youtube_handler import download_and_convert_audio, fetch_song_title
+from utils.audio_processor import load_sound_clips, create_playlist
+
 from utils.config_manager import ConfigManager
 
 
-def validate_playlist_name(name: str) -> tuple:
-    """Validates the playlist name for invalid characters."""
-    invalid_chars = r'[<>:"/\\|?*]'
-    valid = True
-    message = ''
-    if re.search(invalid_chars, name):
-        valid = False 
-        message = """
-        The playlist name contains invalid characters: < > : " / \\ | ? *\n
-        Please remove any invalid character.
-        """
-    
-    return valid, message
+def _initialize_session_state():
+    # Initialize session state for song titles if not already done
+    if "song_titles" not in st.session_state:
+        st.session_state["song_titles"] = {}
 
-def download_and_convert_audio(url: str):
-    """Downloads raw audio from YouTube and converts it to MP3 using ffmpeg."""
-    # Download raw audio file
-    ydl_opts = {
-        'format': 'bestaudio',  # Download the best audio quality available
-        'outtmpl': 'tmp_raw_audio.%(ext)s',  # Save as 'tmp_raw_audio' with correct extension
-        'quiet': True,
-    }
+    if "uploaded_tchica" not in st.session_state:
+        st.session_state["uploaded_tchica"] = None
 
-    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-        info = ydl.extract_info(url, download=True)
-
-    raw_file = info['requested_downloads'][0]['filepath']  # Path to the downloaded raw file
-
-    # Convert to MP3 using ffmpeg
-    # converted_file = "tmp_output_audio_file.mp3"  # Output MP3 file
-    unique_id = str(uuid.uuid4())
-    converted_file = f"tmp_{unique_id}.mp3"
-    
-    command = [
-        'ffmpeg',
-        '-i', raw_file,
-        '-vn',
-        '-acodec', 'mp3',
-        converted_file,
-    ]
-
-    # Suppress output
-    with open(os.devnull, 'w') as devnull:
-        subprocess.run(command, stdout=devnull, stderr=devnull)
-
-    # Clean up the raw file
-    if os.path.exists(raw_file):
-        os.remove(raw_file)
-
-    # print(f"Converted file saved as: {converted_file}")
-    return converted_file
-
-def create_playlist(music_links, start_seconds):
-    """
-    Creates a playlist by processing music from YouTube links.
-    """
-    final_song = AudioSegment.empty()
-
-    # Load horn and personal tag and trimm them
-    horn = AudioSegment.from_file(cm.SOUND_CLIPS_PATH + 'horn.m4a', format="m4a")[:-1300]
-    tchica = AudioSegment.from_file(cm.SOUND_CLIPS_PATH + 'tchica_tchica.m4a', format="m4a")[:-300]
-    personal_tag = AudioSegment.from_file(cm.SOUND_CLIPS_PATH + 'signature_tag.m4a')
-
-    total_songs = len(music_links)
-    
-    progress_bar = st.progress(0)
-
-    with st.spinner("Downloading songs..."):
-        for i, url in enumerate(music_links):
-            # Download each song and get file path
-            audio_file_path = download_and_convert_audio(url)
-            
-            # Load the song directly from the file path
-            sound = AudioSegment.from_file(audio_file_path, format="mp3")
-            
-            # Get start time for the song (in milliseconds)
-            start_time = start_seconds.get(url, 0) * 1000  # Convert seconds to milliseconds
-            
-            # Trim the song to the specified start time and first minute
-            sound = sound[start_time:start_time + cm.DEFAULT_SONG_DURATION * 1000]  # First 1 minute in milliseconds
-            
-            # Add personal tag for the first song and sound bites in between songs
-            if i == 0:
-                final_song += personal_tag
-                final_song += sound
-            else:
-                final_song += tchica
-                final_song += horn
-                final_song += sound
-
-            # Cleanup the temporary file
-            os.remove(audio_file_path)
-
-            # Update progress bar
-            progress_bar.progress((i + 1) / total_songs)
-    
-    return final_song
-
-@st.cache_data
-def fetch_song_title(url: str) -> str:
-    """Fetches the song title from a YouTube URL."""
-    try:
-        ydl_opts = {
-            'quiet': True,
-            'skip_download': True,  # Do not download the video
-        }
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            info = ydl.extract_info(url, download=False)
-            title = f"✅ {info.get('title', 'Unknown Title') }"
-            return title
-    except Exception as e:
-        return f"❌ Could not fetch song"
-
-def _load_sound_clips(uploaded_tchica=False):
-    """Load the sound clips necessary for the playlist"""
-    ## Intro sound
-    personal_tag = AudioSegment.from_file(cm.SOUND_CLIPS_PATH + 'signature_tag.m4a')
-
-    ## In-between sounds
-    # Process the uploaded file or use the default tchica_tchica sound
-    if uploaded_tchica_file:
-        # Save the uploaded file to a temporary location
-        with open("temp_tchica.m4a", "wb") as temp_file:
-            temp_file.write(uploaded_tchica_file.read())
-        
-        # Load the uploaded file as an AudioSegment
-        tchica = AudioSegment.from_file("temp_tchica.m4a")
-        st.sidebar.success("Custom sound loaded successfully!")
-    else:
-        # Use the default 'tchica_tchica.m4a' if no file is uploaded
-        tchica = AudioSegment.from_file(cm.SOUND_CLIPS_PATH + 'tchica_tchica.m4a', format="m4a")[:-300]
-    
-    # Load horn and trimm it
-    horn = AudioSegment.from_file(cm.SOUND_CLIPS_PATH + 'horn.m4a', format="m4a")[:-1300]
-
-    sound_clips = {
-        'personal_tag': personal_tag,
-        'tchica': tchica,
-        'horn': horn,
-    }
-    return sound_clips
 
 def main():
     st.title(':beer: Power Hour Playlist Maker')
+
+    # Initialize Session State
+    _initialize_session_state()
 
     # Config Sidebar
     st.sidebar.title('Playlist Options')
@@ -174,9 +48,12 @@ def main():
             type=['mp3', 'wav', 'm4a'],
             label_visibility='hidden',
         )
+        if uploaded_tchica_file:
+            st.session_state["uploaded_tchica"] = uploaded_tchica_file
+            st.success("Custom sound loaded successfully!")
 
     # Define sounds
-
+    sound_clips = load_sound_clips(cm, st.session_state)
     
     # Introductory section
     with st.expander('About this App', expanded=True, icon=':material/info:'):
@@ -204,9 +81,6 @@ def main():
         st.warning("Please enter a playlist name.")
         return
     
-    # Initialize session state for song titles if not already done
-    if "song_titles" not in st.session_state:
-        st.session_state["song_titles"] = {}
 
     num_songs = st.number_input("Enter number of songs:", min_value=1, max_value=cm.MAX_NUMBER_SONGS, value=cm.DEFAULT_NUMBER_SONGS)
 
@@ -252,7 +126,7 @@ def main():
 
     # Only enable download button when all links and start times are entered
     if st.button("Create Playlist"):
-        final_song = create_playlist(music_links, start_seconds)
+        final_song = create_playlist(music_links, start_seconds, sound_clips, cm)
         
         # Convert final playlist to byte data for download
         with tempfile.NamedTemporaryFile(delete=False, suffix='.mp3') as temp_file:
@@ -278,6 +152,7 @@ if __name__ == "__main__":
 
 
 # TODO
+# 1. Improve 'About This App' and README
 
 # Try dragging components: https://draggable-container-demo.streamlit.app/
 # X. Try asynchronous processing 1 more time
