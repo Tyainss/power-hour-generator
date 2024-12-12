@@ -26,23 +26,23 @@ def _initialize_session_state():
 
 
 def main():
-    st.title(':beer: Power Hour Playlist Maker')
+    st.title('Power Hour Playlist Maker :notes:')
 
     # Initialize Session State
     _initialize_session_state()
 
     # Config Sidebar
-    st.sidebar.title('Playlist Options')
+    st.sidebar.title(':gear: Playlist Settings')
         # Button to select playlist order
     order_option = st.sidebar.radio(
-        'Select the playlist order:',
+        'Playlist Order:',
         options=['In Order', 'Random Order'],
         index=0,  # Default to "In Order"
         help='Choose whether the playlist follows the entered song order or shuffles the songs randomly.'
     )
     st.sidebar.divider()
         # Widget for uploading custom tchica_tchica
-    with st.sidebar.expander(label="Upload a custom sound to replace 'tchica_tchica.m4a':",):
+    with st.sidebar.expander(label="Upload your own custom sound to use between songs:",):
         uploaded_tchica_file = st.file_uploader(
             "Upload a custom sound to replace 'tchica_tchica.m4a':",
             type=['mp3', 'wav', 'm4a'],
@@ -50,35 +50,51 @@ def main():
         )
         if uploaded_tchica_file:
             st.session_state["uploaded_tchica"] = uploaded_tchica_file
-            st.success("Custom sound loaded successfully!")
+            st.success("🎉 Your custom sound was uploaded successfully!")
 
     # Define sounds
     sound_clips = load_sound_clips(cm, st.session_state)
     
     # Introductory section
     with st.expander('About this App', expanded=True, icon=':material/info:'):
-        st.markdown("""
-        ### :beer: Power Hour
-        This app allows you to create a personalized Power Hour playlist by downloading and combining audio clips from YouTube.
-        Follow these steps to create your playlist:
-        1. Enter a name for your playlist.
-        2. Specify the number of songs you want in the playlist.
-        3. Provide YouTube links for each song and optionally set a custom start time for each clip.
-        4. Click "Create Playlist file" to generate the MP3 file.
-        5. Download your playlist and enjoy your personalized Power Hour!
+        col1, col2 = st.columns(2)
+        with col1:
+            st.markdown("""
+            ### :beers: What is Power Hour?
+            Power Hour is a fun drinking game to enjoy with your friends. The goal is simple:
+            - Listen to **60 one-minute** songs.
+            - After each song, a **horn will sound-time** for everyone to take a sip of their drinks! :beers:
+            - Every **10 minutes**, participants should **finish their drink**
+            
+            Sounds easy right? You'll have to try to find out :wink:
+            """)
 
-        **Note:** Each song will be trimmed to 1 minute starting from the provided start time.
-        """)
+        with col2:
+            st.markdown("""
+            ### :headphones: How this app works
+            Create your own personalized Power Hour playlist with just a few steps:
+            
+            1. Name your playlist
+            2. Set the number of songs (default is 60)
+            3. Add YouTube links for each song and optionally choose a custom start time.
+            4. Click "Create Playlist file" to generate your personalized MP3 file.
+            5. Download and start playing it!
+
+            **Note:** Each song will be trimmed to 1 minute starting from the provided start time.
+            """)
 
     # Get playlist name from user
-    playlist_name = st.text_input("Enter Playlist Name:")
+    playlist_name = st.text_input(
+        label="Give Your Playlist a Name:",
+        help='This will be the name of the file when downloading it'
+    )
     if playlist_name:
         is_valid, warning_msg = validate_playlist_name(playlist_name)
         if not is_valid:
-            st.error(warning_msg)
+            st.error(f'🚫 {warning_msg}')
             return
     else:
-        st.warning("Please enter a playlist name.")
+        st.warning("⚠️ Don't forget to name your playlist!")
         return
     
 
@@ -94,7 +110,7 @@ def main():
             col1, col2 = st.columns([4, 1])
             with col1:
                 url = st.text_input(
-                    f"Enter YouTube link for song {i + 1}",
+                    f"🔗 YouTube Link for Song {i + 1}",
                     key=f"url_{i}"
                 )
                 if url:
@@ -110,7 +126,7 @@ def main():
                     st.write(f"{title}")
                 
             with col2:
-                seconds = st.number_input(f"Start time for song {i + 1}", min_value=0, value=0, key=f"start_{i}")
+                seconds = st.number_input(f"⏱️ Start time (seconds) for Song {i + 1}", min_value=0, value=0, key=f"start_{i}")
             
             if url:
                 music_links.append(url)
@@ -152,7 +168,9 @@ if __name__ == "__main__":
 
 
 # TODO
+# Validate if it's working
 # 1. Improve 'About This App' and README
+# 2. Add more comments in the code
 
 # Try dragging components: https://draggable-container-demo.streamlit.app/
 # X. Try asynchronous processing 1 more time
