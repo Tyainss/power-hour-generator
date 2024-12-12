@@ -83,6 +83,8 @@ power_hour_app/
 │   │   ├── horn.m4a
 │   │   ├── tchica_tchica.m4a
 │   │   ├── signature_tag.m4a
+├── .streamlit/                # Streamlit settings files
+│   ├── config.toml            # Configurations for the Streamlit App
 ```
 
 ---
