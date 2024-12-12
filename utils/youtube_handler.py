@@ -18,9 +18,8 @@ def download_and_convert_audio(url: str):
     raw_file = info['requested_downloads'][0]['filepath']  # Path to the downloaded raw file
 
     # Convert to MP3 using ffmpeg
-    # converted_file = "tmp_output_audio_file.mp3"  # Output MP3 file
     unique_id = str(uuid.uuid4())
-    converted_file = f"tmp_{unique_id}.mp3"
+    converted_file = f'tmp_{unique_id}.mp3'
     
     command = [
         'ffmpeg',
@@ -38,7 +37,6 @@ def download_and_convert_audio(url: str):
     if os.path.exists(raw_file):
         os.remove(raw_file)
 
-    # print(f"Converted file saved as: {converted_file}")
     return converted_file
 
 @st.cache_data(show_spinner=False)
@@ -51,7 +49,7 @@ def fetch_song_title(url: str) -> str:
         }
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(url, download=False)
-            title = f"✅ {info.get('title', 'Unknown Title') }"
+            title = f'✅ {info.get('title', 'Unknown Title') }'
             return title
     except Exception as e:
-        return f"❌ Could not fetch song"
+        return f'❌ Could not fetch song'

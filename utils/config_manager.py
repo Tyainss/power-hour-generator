@@ -16,10 +16,10 @@ class ConfigManager:
             with open(path, 'r', encoding=encoding) as f:
                 return json.load(f)
         except FileNotFoundError:
-            logger.error(f"Error: The file {path} does not exist.")
+            logger.error(f'Error: The file {path} does not exist.')
             return {}
         except json.JSONDecodeError:
-            logger.error(f"Error: The file {path} is not a valid JSON.")
+            logger.error(f'Error: The file {path} is not a valid JSON.')
             return {}
 
     def get(self, key, default=None):
