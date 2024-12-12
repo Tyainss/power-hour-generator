@@ -16,8 +16,10 @@ def load_sound_clips(_config_manager, _session_state):
     Returns:
         dict: A dictionary containing personal_tag, tchica, and horn AudioSegments.
     """
+    sound_clips_path = _config_manager.SOUND_CLIPS_PATH
+
     # Intro sound
-    personal_tag = AudioSegment.from_file(_config_manager.get('SOUND_CLIPS_PATH') + 'signature_tag.m4a')
+    personal_tag = AudioSegment.from_file(os.path.join(sound_clips_path , 'signature_tag.m4a'))
 
     # In-between sounds
     if _session_state.get('uploaded_tchica'):
@@ -27,11 +29,11 @@ def load_sound_clips(_config_manager, _session_state):
         tchica = AudioSegment.from_file('temp_tchica.m4a')
     else:
         tchica = AudioSegment.from_file(
-            _config_manager.get('SOUND_CLIPS_PATH') + 'tchica_tchica.m4a'
+            os.path.join(sound_clips_path, 'tchica_tchica.m4a')
         )[:-300]
 
     # Load horn and trim it
-    horn = AudioSegment.from_file(_config_manager.get('SOUND_CLIPS_PATH') + 'horn.m4a')[:-1300]
+    horn = AudioSegment.from_file(os.path.join(sound_clips_path, 'horn.m4a'))[:-1300]
 
     return {
         'personal_tag': personal_tag,

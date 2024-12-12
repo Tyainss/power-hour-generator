@@ -1,4 +1,5 @@
 import json
+import os
 
 class ConfigManager:
     CONFIG_PATH_DEFAULT = 'config.json'
@@ -6,7 +7,8 @@ class ConfigManager:
     def __init__(self, config_path = CONFIG_PATH_DEFAULT) -> None:
         self.config = self.load_json(config_path)
 
-        self.SOUND_CLIPS_PATH = self.config['SOUND_CLIPS_PATH']
+        # Resolve absolute path for SOUND_CLIPS_PATH
+        self.SOUND_CLIPS_PATH = os.path.abspath(self.config['SOUND_CLIPS_PATH'])
         self.DEFAULT_SONG_DURATION = self.config['DEFAULT_SONG_DURATION']
         self.DEFAULT_NUMBER_SONGS = self.config['DEFAULT_NUMBER_SONGS']
         self.MAX_NUMBER_SONGS = self.config['MAX_NUMBER_SONGS']
