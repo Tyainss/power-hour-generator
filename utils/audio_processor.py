@@ -2,6 +2,8 @@ from pydub import AudioSegment
 import os
 import streamlit as st
 
+from utils.youtube_handler import  download_and_convert_audio
+
 @st.cache_resource(show_spinner=False)
 def load_sound_clips(_config_manager, _session_state):
     """

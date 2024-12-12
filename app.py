@@ -1,23 +1,18 @@
 import streamlit as st
-import yt_dlp
 import io
 import os
-import re
-from pydub import AudioSegment
 import tempfile
-import subprocess
 import random
-import uuid
 
 from utils.validations import validate_playlist_name
-from utils.youtube_handler import download_and_convert_audio, fetch_song_title
+from utils.youtube_handler import fetch_song_title
 from utils.audio_processor import load_sound_clips, create_playlist
 
 from utils.config_manager import ConfigManager
 
 
 def _initialize_session_state():
-    # Initialize session state for song titles if not already done
+    """Initialize session state for song titles if not already done"""
     if 'song_titles' not in st.session_state:
         st.session_state['song_titles'] = {}
 
@@ -57,17 +52,31 @@ def main():
     
     # Introductory section
     with st.expander('About this App', expanded=True, icon=':material/info:'):
-        col1, col2 = st.columns(2)
+        col1, divider, col2 = st.columns([10, 1, 10])
         with col1:
             st.markdown("""
             ### :beers: What is Power Hour?
             Power Hour is a fun drinking game to enjoy with your friends. The goal is simple:
             - Listen to **60 one-minute** songs.
-            - After each song, a **horn will sound-time** for everyone to take a sip of their drinks! :beers:
+            - After each song, a **horn will sound** - it's time for everyone to take a sip of their drinks! :beers:
             - Every **10 minutes**, participants should **finish their drink**
             
             Sounds easy right? You'll have to try to find out :wink:
             """)
+        
+        with divider:
+            st.html(
+            '''
+                <div class="divider-vertical-line"></div>
+                <style>
+                    .divider-vertical-line {
+                        border-left: 2px solid rgba(49, 51, 63, 0.2);
+                        height: 320px;
+                        margin: auto;
+                    }
+                </style>
+            '''
+        )
 
         with col2:
             st.markdown("""
@@ -169,8 +178,6 @@ if __name__ == '__main__':
 
 # TODO
 # Validate if it's working
-# 1. Improve 'About This App' and README
-# 2. Add more comments in the code
 
 # Try dragging components: https://draggable-container-demo.streamlit.app/
 # X. Try asynchronous processing 1 more time
