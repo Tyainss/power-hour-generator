@@ -1,4 +1,20 @@
-# Power Hour Playlist Maker
+<div align="center">
+  <div id="user-content-toc">
+    <ul>
+      <summary><h1 style="display: inline-block;">🎵 Power Hour Playlist Maker 🎵</h1></summary>
+    </ul>
+  </div>
+
+</div>
+
+<div align="center">
+      <a href="https://power-hour.streamlit.app/"><img src="https://static.streamlit.io/badges/streamlit_badge_black_white.svg"/></a>
+
+</div>
+<br>
+<hr>
+
+![streamlit_app](assets/images/streamlit_app.png)
 
 Welcome to the **Power Hour Playlist Maker**! This app allows you to create a fun and personalized playlist for the classic drinking game "Power Hour." Easily download audio clips from YouTube, trim them to one-minute snippets, and generate a ready-to-use playlist for your party.
 
