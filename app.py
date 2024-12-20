@@ -7,7 +7,6 @@ import random
 from utils.validations import validate_playlist_name
 from utils.youtube_handler import fetch_song_title
 from utils.audio_processor import load_sound_clips, create_playlist
-
 from utils.config_manager import ConfigManager
 
 
@@ -19,6 +18,29 @@ def _initialize_session_state():
     if 'uploaded_tchica' not in st.session_state:
         st.session_state['uploaded_tchica'] = None
 
+    if 'playlist_created' not in st.session_state:
+        st.session_state['playlist_created'] = False
+
+    if 'final_song' not in st.session_state:
+        st.session_state['final_song'] = None
+
+    if 'playlist_name' not in st.session_state:
+        st.session_state['playlist_name'] = ""
+
+
+def show_download_button():
+    """Display the download button for the playlist if created"""
+    if st.session_state["final_song"] and st.session_state["playlist_name"]:
+        buffer = io.BytesIO()
+        st.session_state["final_song"].export(buffer, format="mp3")  # Export to in-memory buffer
+        buffer.seek(0)
+        st.download_button(
+            label="Download Playlist",
+            data=buffer,
+            file_name=f"{st.session_state['playlist_name']}.mp3",
+            mime="audio/mp3",
+            key="download_playlist"
+        )
 
 def main():
     st.title('Power Hour Playlist Maker :notes:')
@@ -28,15 +50,17 @@ def main():
 
     # Config Sidebar
     st.sidebar.title(':gear: Playlist Settings')
-        # Button to select playlist order
+    # Button to select playlist order
     order_option = st.sidebar.radio(
         'Playlist Order:',
         options=['In Order', 'Random Order'],
         index=0,  # Default to 'In Order'
         help='Choose whether the playlist follows the entered song order or shuffles the songs randomly.'
     )
+
     st.sidebar.divider()
-        # Widget for uploading custom tchica_tchica
+
+    # Widget for uploading custom tchica_tchica
     with st.sidebar.expander(label='Upload your own custom sound to use between songs:',):
         uploaded_tchica_file = st.file_uploader(
             'Upload your own custom sound to use between songs:',
@@ -107,7 +131,12 @@ def main():
         return
     
 
-    num_songs = st.number_input('Enter number of songs:', min_value=1, max_value=cm.MAX_NUMBER_SONGS, value=cm.DEFAULT_NUMBER_SONGS)
+    num_songs = st.number_input(
+        'Enter number of songs:', 
+        min_value=1, 
+        max_value=cm.MAX_NUMBER_SONGS, 
+        value=cm.DEFAULT_NUMBER_SONGS
+    )
 
     with st.container(height=500):
 
@@ -135,7 +164,12 @@ def main():
                     st.write(f'{title}')
                 
             with col2:
-                seconds = st.number_input(f'⏱️ Start time (seconds) for Song {i + 1}', min_value=0, value=0, key=f'start_{i}')
+                seconds = st.number_input(
+                    f'⏱️ Start time (seconds) for Song {i + 1}', 
+                    min_value=0, 
+                    value=0, 
+                    key=f'start_{i}'
+                )
             
             if url:
                 music_links.append(url)
@@ -153,21 +187,16 @@ def main():
     if st.button('Create Playlist'):
         final_song = create_playlist(music_links, start_seconds, sound_clips, cm)
         
-        # Convert final playlist to byte data for download
-        with tempfile.NamedTemporaryFile(delete=False, suffix='.mp3') as temp_file:
-            final_song.export(temp_file.name, format='mp3')
-            temp_file_path = temp_file.name
-        
+        st.session_state['final_song'] = final_song
+        st.session_state['playlist_name'] = playlist_name
+        st.session_state['playlist_created'] = True
+        st.success("🎶 Playlist created successfully! Download it below.")
+
         st.balloons()
 
-        # Allow the user to download the generated playlist
-        with open(temp_file_path, 'rb') as file:
-            st.download_button(
-                label='Download Playlist',
-                data=file,
-                file_name=f'{playlist_name}.mp3',
-                mime='audio/mp3'
-            )
+    # Show the download button only if a playlist was created
+    if st.session_state.get('playlist_created', False):
+        show_download_button()
 
 if __name__ == '__main__':
     cm = ConfigManager('config.json')
@@ -176,8 +205,4 @@ if __name__ == '__main__':
 
 
 
-# TODO
-# Validate if it's working
-
 # Try dragging components: https://draggable-container-demo.streamlit.app/
-# X. Try asynchronous processing 1 more time
